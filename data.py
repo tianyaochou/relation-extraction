@@ -8,6 +8,44 @@ import sklearn.decomposition
 from collections import Counter
 import random
 import numpy
+import re
+
+def clean_str(text):
+    text = text.lower()
+    # Clean the text
+    text = re.sub(r"[^A-Za-z0-9^,!.\/'+-=]", " ", text)
+    text = re.sub(r"what's", "what is ", text)
+    text = re.sub(r"that's", "that is ", text)
+    text = re.sub(r"there's", "there is ", text)
+    text = re.sub(r"it's", "it is ", text)
+    text = re.sub(r"\'s", " ", text)
+    text = re.sub(r"\'ve", " have ", text)
+    text = re.sub(r"can't", "can not ", text)
+    text = re.sub(r"n't", " not ", text)
+    text = re.sub(r"i'm", "i am ", text)
+    text = re.sub(r"\'re", " are ", text)
+    text = re.sub(r"\'d", " would ", text)
+    text = re.sub(r"\'ll", " will ", text)
+    text = re.sub(r",", " ", text)
+    text = re.sub(r"\.", " ", text)
+    text = re.sub(r"!", " ! ", text)
+    text = re.sub(r"\/", " ", text)
+    text = re.sub(r"\^", " ^ ", text)
+    text = re.sub(r"\+", " + ", text)
+    text = re.sub(r"\-", " - ", text)
+    text = re.sub(r"\=", " = ", text)
+    text = re.sub(r"'", " ", text)
+    text = re.sub(r"(\d+)(k)", r"\g<1>000", text)
+    text = re.sub(r":", " : ", text)
+    text = re.sub(r" e g ", " eg ", text)
+    text = re.sub(r" b g ", " bg ", text)
+    text = re.sub(r" u s ", " american ", text)
+    text = re.sub(r"\0s", "0", text)
+    text = re.sub(r" 9 11 ", "911", text)
+    text = re.sub(r"e - mail", "email", text)
+    text = re.sub(r"j k", "jk", text)
+    text = re.sub(r"\s{2,}", " ", text)
+    return text
 
 class Dataset(object):
     """
@@ -36,18 +74,20 @@ class Dataset(object):
                 is_label = False
             else:
                 quote_index = line.index('"')
-                data_in.append(line[quote_index + 1 : -2])
+                data_in.append(clean_str(line[quote_index + 1 : -2]))
                 is_label = True
 
-        # divide into training data and test cases by 0.25 : 0.75
+        # divide into training data and test cases by 0.2 : 0.8
         (
             self.data_train,
             self.data_test,
             self.label_train,
             self.label_test,
         ) = sklearn.model_selection.train_test_split(
-            data_in, label_in, test_size=0.25, random_state=0
+            data_in, label_in, test_size=0.1
         )
+        # self.data_train = data_in
+        # self.label_train = label_in
 
         label_count = Counter([label[0] for label in self.label_train])
         class_info = label_count.most_common()
@@ -88,3 +128,5 @@ def print_matrix(real_label, predict_label):
         ret[real_label[i]][predict_label[i]] += 1
     ret_sum = numpy.sum(ret, axis=1)
     return numpy.matmul(numpy.diag(1 / ret_sum), ret)
+
+print_matrix([0,1,2,3,4,5,6,7,8,9,4,5,6,0,0,0,1], [0,2,2,3,4,5,6,7,8,9,6,5,4,0,1,0,0])

@@ -1,16 +1,20 @@
 [[source]]
-url = "https://pypi.org/simple"
+url = "https://pypi.tuna.tsinghua.edu.cn/simple"
 verify_ssl = true
 name = "pypi"
 
 [packages]
+numpy = "==1.19.3"
 nltk = "*"
-scikit-learn = "*"
 torch = "*"
 transformers = "*"
+scikit-learn = "*"
 
 [dev-packages]
 black = "*"
+pylint = "*"
+rope = "*"
+ipykernel = "*"
 
 [requires]
 python_version = "3.9"
