@@ -87,4 +87,4 @@ def print_matrix(real_label, predict_label):
     for i in range(len(real_label)):
         ret[real_label[i]][predict_label[i]] += 1
     ret_sum = numpy.sum(ret, axis=1)
-    return numpy.matmul(1 / numpy.diag(ret_sum), ret)
+    return numpy.matmul(numpy.diag(1 / ret_sum), ret)
