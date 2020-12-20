@@ -5,6 +5,9 @@ import sklearn.preprocessing
 import sklearn.svm
 import sklearn.decomposition
 
+from collections import Counter
+import random
+import numpy
 
 class Dataset(object):
     """
@@ -45,6 +48,22 @@ class Dataset(object):
         ) = sklearn.model_selection.train_test_split(
             data_in, label_in, test_size=0.25, random_state=0
         )
+
+        label_count = Counter([label[0] for label in self.label_train])
+        class_info = label_count.most_common()
+        data_train_stat = {
+            label: [] for label in label_count
+        }
+        for idx, data in enumerate(self.data_train):
+            data_train_stat[self.label_train[idx][0]].append((idx, data))
+        tmp_set = []
+        max_label_count = class_info[0][1]
+        for (label, label_count) in class_info:
+            tmp_set += random.choices(data_train_stat[label], k=max_label_count-label_count)
+        for idx, data in tmp_set:
+            self.data_train.append(data)
+            self.label_train.append(self.label_train[idx])
+
         self.raw_data_test = self.data_test
 
     def evaluate(self, model, sample_cnt=10):
@@ -62,3 +81,10 @@ class Dataset(object):
             i = wrong[index]
             print(self.raw_data_test[i])
             print("Wrong: {}, Cor: {}".format(self.label_decode(result[i]), self.label_decode(self.label_test[i])))
+
+def print_matrix(real_label, predict_label):
+    ret = numpy.zeros((10,10), dtype=numpy.float)
+    for i in range(len(real_label)):
+        ret[real_label[i]][predict_label[i]] += 1
+    ret_sum = numpy.sum(ret, axis=1)
+    return numpy.matmul(1 / numpy.diag(ret_sum), ret)
