@@ -1,53 +1,50 @@
-from functools import reduce
-from operator import pos
-from data import Dataset
-from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
-from sklearn.feature_extraction import DictVectorizer
-from sklearn.preprocessing import LabelEncoder
-from sklearn.svm import LinearSVC, SVC, NuSVC
-from sklearn.linear_model import LogisticRegression
-from collections import Counter
-from nltk.tag import pos_tag
-from nltk.tokenize import word_tokenize
+import sklearn
+import sklearn.feature_extraction.text
+import sklearn.preprocessing
+import sklearn.svm
+import sklearn.decomposition
 
-data = Dataset("./train.txt")
+class Dataset(object):
+    """
+    Object holding dataset
+    """
+    def __init__(self, file_path):
+        # Read training data
+        file  = open(file_path)
+        lines = file.readlines()
+        data_in = []
+        label_in = []
+        is_label = False
+        for line in lines:
+            if is_label is True:
+                para_index = line.index('(')
+                label_in.append(line[0 : para_index])
+                is_label = False
+            else:
+                quote_index = line.index('"')
+                data_in.append(line[quote_index + 1 : -1])   
+                is_label = True  
+                
+        self.featurizor = sklearn.feature_extraction.text.TfidfVectorizer()
+        vec_data = self.featurizor.fit_transform(data_in)
+        # PCA
+        # self.pca = sklearn.decomposition.PCA(n_components=3000)
+        # vec_data = self.pca.fit_transform(vec_data.toarray())
 
+        self.label_encoder = sklearn.preprocessing.LabelEncoder()
+        label_in = self.label_encoder.fit_transform(label_in)
 
-def count_words(sentence):
-    c = Counter()
-    for word in pos_tag(word_tokenize(sentence)):
-        # c[word[0] + "/" + word[1]] += 1
-        c[word[0]] += 1
-    return c
+        # divide into training data and test cases by 0.25 : 0.75
+        self.data_train, self.data_test, self.label_train, self.label_test = sklearn.model_selection.train_test_split(vec_data, label_in, test_size=0.25, random_state=0)
 
+    def train(self):
+        self.svm = sklearn.svm.LinearSVC()
+        self.svm.fit(self.data_train, self.label_train)
 
-middles = []
-for i in range(len(data.data_train)):
-    middle_start = data.data_train[i].index(data.label_train[i][1])
-    middle_end = data.data_train[i].index(data.label_train[i][2])
-    if middle_start < middle_end:
-        middle = data.data_train[i][
-            middle_start + +len(data.label_train[i][1]) : middle_end
-        ]
-    else:
-        middle = data.data_train[i][
-            middle_end + len(data.label_train[i][2]) : middle_start
-        ]
-    # middle = data.data_train[i]
-    middles.append(count_words(middle))
-
-data.data_test = [count_words(sentence) for sentence in data.data_test]
-
-featurizor = DictVectorizer()
-label_encoder = LabelEncoder()
-data.data_train = featurizor.fit_transform(middles)
-data.data_test = featurizor.transform(data.data_test)
-data.label_decode = lambda x: label_encoder.inverse_transform([x])[0]
-
-data.label_train = label_encoder.fit_transform([label[0] for label in data.label_train])
-data.label_test = label_encoder.transform([label[0] for label in data.label_test])
-
-svm = LinearSVC()
-svm.fit(data.data_train, data.label_train)
-
-data.evaluate(svm)
+    def evaluate(self):
+        result = self.svm.predict(self.data_test)
+        right = 0
+        for i in range(len(self.label_test)):
+            if result[i] == self.label_test[i]:
+                right += 1
+        print(right, len(self.label_test), right / len(self.label_test))
